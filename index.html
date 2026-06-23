@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>DeepFeed · Панель управления</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 16px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #0f0f18;
+            border-radius: 16px;
+            border: 1px solid #1a1a1a;
+            margin-bottom: 20px;
+        }
+        .header .logo { font-size: 1.4rem; font-weight: 800; color: #fff; cursor: pointer; }
+        .header .logo span { color: #ff8c00; }
+        .header .logo .badge { font-size: 0.55rem; background: #ff8c00; color: #fff; padding: 2px 10px; border-radius: 40px; font-weight: 600; }
+        .header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #1a1a2a;
+            padding: 4px 12px 4px 4px;
+            border-radius: 40px;
+            border: 1px solid #2a2a2a;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .header .user-info:hover { border-color: #ff8c00; }
+        .header .user-info .avatar { font-size: 1.6rem; line-height: 1; }
+        .header .user-info .name { font-size: 0.9rem; font-weight: 600; }
+        .header .user-info .edit-hint { font-size: 0.6rem; color: #666; }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .stats .stat {
+            background: #0f0f18;
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 10px 18px;
+            text-align: center;
+            flex: 1;
+            min-width: 80px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .stats .stat:hover { border-color: #ff8c00; }
+        .stats .stat .num { font-size: 1.5rem; font-weight: 700; color: #fff; }
+        .stats .stat .label { font-size: 0.65rem; color: #666; }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .tabs .tab {
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: 1px solid #2a2a2a;
+            background: transparent;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .tabs .tab:hover { border-color: #444; color: #fff; }
+        .tabs .tab.active { background: #ff8c00; border-color: #ff8c00; color: #0b0b0f; }
+        .tabs .tab .count { background: rgba(255,255,255,0.15); padding: 0 8px; border-radius: 40px; font-size: 0.65rem; margin-left: 4px; }
+
+        .content {
+            background: #0f0f18;
+            border: 1px solid #1a1a1a;
+            border-radius: 16px;
+            padding: 16px;
+            min-height: 300px;
+        }
+
+        .post-card {
+            background: #14141f;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            transition: border-color 0.2s;
+        }
+        .post-card:hover { border-color: #ff8c00; }
+        .post-card .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .post-card .post-header .post-author { color: #ffaa44; font-weight: 700; font-size: 0.85rem; }
+        .post-card .post-header .post-site { font-size: 0.65rem; color: #666; }
+        .post-card .post-header .post-time { font-size: 0.55rem; color: #555; }
+        .post-card .post-text { 
+            font-size: 0.9rem; 
+            color: #ddd; 
+            margin: 4px 0; 
+            word-break: break-word;
+            max-height: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .post-card .post-text.expanded { max-height: none; }
+        .post-card .post-meta {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-size: 0.65rem;
+            color: #666;
+            margin: 4px 0;
+        }
+        .post-card .post-meta .tag { color: #66aaff; background: #0f0f1a; padding: 0 8px; border-radius: 20px; border: 1px solid #1a1a2a; }
+        .post-card .post-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #1a1a2a;
+        }
+        .post-card .post-actions button {
+            padding: 4px 14px;
+            border-radius: 40px;
+            border: none;
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .post-card .post-actions .btn-delete { background: #4a1a1a; color: #ff6666; }
+        .post-card .post-actions .btn-delete:hover { background: #6a1a1a; }
+        .post-card .post-actions .btn-edit { background: #2a2a3a; color: #ff8c00; border: 1px solid #ff8c00; }
+        .post-card .post-actions .btn-edit:hover { background: #3a3a4a; }
+        .post-card .post-actions .btn-expand { background: #1a1a2a; color: #888; border: 1px solid #2a2a2a; }
+        .post-card .post-actions .btn-expand:hover { background: #2a2a3a; color: #fff; }
+        .post-card .post-actions .btn-view-site { background: #1877f2; color: #fff; }
+        .post-card .post-actions .btn-view-site:hover { background: #4a9eff; }
+
+        .post-card .post-preview {
+            margin: 6px 0;
+            border: 1px solid #1a1a2a;
+            border-radius: 8px;
+            overflow: hidden;
+            max-height: 200px;
+        }
+        .post-card .post-preview iframe {
+            width: 100%;
+            height: 200px;
+            border: none;
+            display: block;
+        }
+        .post-card .post-img {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 8px;
+            margin: 4px 0;
+            border: 1px solid #1a1a2a;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal.open { display: flex; }
+        .modal .modal-box {
+            background: #1a1a2a;
+            padding: 24px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid #333;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal .modal-box h3 { color: #ff8c00; margin-bottom: 4px; }
+        .modal .modal-box .sub { color: #666; font-size: 0.85rem; margin-bottom: 14px; }
+        .modal .modal-box input, .modal .modal-box textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+        .modal .modal-box textarea { min-height: 80px; resize: vertical; }
+        .modal .modal-box input:focus, .modal .modal-box textarea:focus { border-color: #ff8c00; }
+        .modal .modal-box .btns {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .modal .modal-box .btns button {
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .modal .modal-box .btns .cancel { background: #2a2a2a; color: #aaa; }
+        .modal .modal-box .btns .cancel:hover { background: #3a3a3a; }
+        .modal .modal-box .btns .save { background: #ff8c00; color: #0b0b0f; }
+        .modal .modal-box .btns .save:hover { background: #ffa033; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #444;
+        }
+        .empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .empty-state .title { font-size: 1.1rem; color: #666; }
+        .empty-state .sub { font-size: 0.85rem; color: #444; }
+
+        .footer-docs {
+            margin-top: 30px;
+            padding: 20px;
+            background: #0f0f18;
+            border: 1px solid #1a1a1a;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            color: #888;
+            line-height: 1.6;
+        }
+        .footer-docs strong { color: #fff; }
+        .footer-docs .highlight { color: #ff8c00; }
+        .footer-docs .badge-doc {
+            display: inline-block;
+            background: #ff8c00;
+            color: #0b0b0f;
+            padding: 1px 10px;
+            border-radius: 40px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            margin-right: 4px;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .search-bar input {
+            flex: 1;
+            padding: 8px 16px;
+            background: #0a0a12;
+            border: 1px solid #2a2a2a;
+            border-radius: 40px;
+            color: #fff;
+            font-size: 0.85rem;
+            outline: none;
+            min-width: 150px;
+        }
+        .search-bar input:focus { border-color: #ff8c00; }
+        .search-bar select {
+            padding: 8px 16px;
+            background: #0a0a12;
+            border: 1px solid #2a2a2a;
+            border-radius: 40px;
+            color: #fff;
+            font-size: 0.85rem;
+            outline: none;
+            cursor: pointer;
+        }
+        .search-bar select:focus { border-color: #ff8c00; }
+
+        @media (max-width: 640px) {
+            .header .logo { font-size: 1.1rem; }
+            .header .user-info .name { font-size: 0.8rem; }
+            .header .user-info .avatar { font-size: 1.3rem; }
+            .stats .stat .num { font-size: 1.2rem; }
+            .post-card { padding: 10px; }
+            .search-bar { flex-direction: column; }
+            .search-bar input, .search-bar select { width: 100%; }
+        }
+        @media (max-width: 400px) {
+            body { padding: 8px; }
+            .header { padding: 8px 12px; }
+            .content { padding: 10px; }
+            .tabs .tab { font-size: 0.75rem; padding: 6px 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== ШАПКА ===== -->
+    <div class="header">
+        <div class="logo" onclick="location.reload()">
+            Deep<span>Feed</span>
+            <span class="badge">Панель</span>
+        </div>
+        <div class="user-info" id="dfUserInfo" onclick="dfOpenProfile()">
+            <span class="avatar" id="dfAvatar">👤</span>
+            <div>
+                <div class="name" id="dfUserName">Гость</div>
+                <div class="edit-hint">✏️ нажмите</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== СТАТИСТИКА ===== -->
+    <div class="stats">
+        <div class="stat">
+            <div class="num" id="dfTotalPosts">0</div>
+            <div class="label">Всего постов</div>
+        </div>
+        <div class="stat">
+            <div class="num" id="dfSitesCount">0</div>
+            <div class="label">Сайтов</div>
+        </div>
+        <div class="stat">
+            <div class="num" id="dfMyPosts">0</div>
+            <div class="label">Моих постов</div>
+        </div>
+    </div>
+
+    <!-- ===== ВКЛАДКИ + ПОИСК ===== -->
+    <div class="tabs">
+        <button class="tab active" data-tab="all" onclick="dfSwitchTab('all')">🌐 Все посты <span class="count" id="dfAllCount">0</span></button>
+        <button class="tab" data-tab="my" onclick="dfSwitchTab('my')">👤 Мои посты <span class="count" id="dfMyCount">0</span></button>
+        <button class="tab" data-tab="sites" onclick="dfSwitchTab('sites')">🌍 По сайтам <span class="count" id="dfSitesCountTab">0</span></button>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" id="dfSearchInput" placeholder="🔍 Поиск по тексту или автору..." oninput="dfSearch()">
+        <select id="dfSiteFilter" onchange="dfSearch()">
+            <option value="">Все сайты</option>
+        </select>
+    </div>
+
+    <!-- ===== КОНТЕНТ ===== -->
+    <div class="content" id="dfContent">
+        <div class="empty-state">
+            <div class="icon">⏳</div>
+            <div class="title">Загрузка постов...</div>
+        </div>
+    </div>
+
+    <!-- ===== ПОДВАЛ ===== -->
+    <div class="footer-docs">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+            <span style="font-size:1.2rem;">📘</span>
+            <strong style="color:#fff;font-size:1rem;">DeepFeed — Панель управления лентой</strong>
+            <span class="badge-doc">v1.0</span>
+        </div>
+        <p><strong>🔹 Управление постами</strong> — просмотр, редактирование, удаление.</p>
+        <p><strong>🔹 Все сайты</strong> — посты из всех DeepChat сайтов в одной панели.</p>
+        <p><strong>🔹 Firebase</strong> — реальное время, мгновенные обновления.</p>
+        <p><strong>🔹 Админ-вход:</strong> двойной клик по статистике → пароль <span class="highlight">12345</span></p>
+    </div>
+
+    <!-- ===== МОДАЛКИ ===== -->
+    <div class="modal" id="dfProfileModal">
+        <div class="modal-box">
+            <h3>✏️ Редактировать профиль</h3>
+            <div class="sub">Измените имя для отображения</div>
+            <input type="text" id="dfProfileNameInput" placeholder="Ваше имя...">
+            <div class="btns">
+                <button class="cancel" onclick="dfCloseProfile()">Отмена</button>
+                <button class="save" onclick="dfSaveProfile()">💾 Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="dfEditModal">
+        <div class="modal-box">
+            <h3>✏️ Редактировать пост</h3>
+            <div class="sub">Измените содержимое поста</div>
+            <input type="text" id="dfEditMarquee" placeholder="📢 Бегущая строка">
+            <textarea id="dfEditText" placeholder="📝 Текст поста..."></textarea>
+            <input type="url" id="dfEditLink" placeholder="🔗 Ссылка (iframe)">
+            <input type="text" id="dfEditHashtags" placeholder="#хештеги через пробел">
+            <div class="btns">
+                <button class="cancel" onclick="dfCloseEdit()">Отмена</button>
+                <button class="save" onclick="dfSaveEdit()">💾 Сохранить</button>
+            </div>
+            <button onclick="dfDeletePostFromModal()" style="width:100%;margin-top:10px;padding:8px;border-radius:40px;border:none;background:#4a1a1a;color:#ff6666;font-weight:700;cursor:pointer;">🗑 Удалить пост</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ======  FIREBASE ====== -->
+    <!-- ============================================================ -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+    // ================================================================
+    // ======  FIREBASE КОНФИГ ======
+    // ================================================================
+    const config = {
+        apiKey: "AIzaSyC81Ow4VPAUcaQGAuJjhtA-OaR8hyqxCtI",
+        authDomain: "mychatapp-2c141.firebaseapp.com",
+        databaseURL: "https://mychatapp-2c141-default-rtdb.firebaseio.com",
+        projectId: "mychatapp-2c141",
+        storageBucket: "mychatapp-2c141.firebasestorage.app",
+        messagingSenderId: "857322151793",
+        appId: "1:857322151793:web:387599e9e6f9cf1454a0d0"
+    };
+
+    firebase.initializeApp(config);
+    const DB = firebase.database();
+
+    // ================================================================
+    // ======  СОСТОЯНИЕ ======
+    // ================================================================
+    let USER = localStorage.getItem('df_user') || '';
+    let IS_ADMIN = localStorage.getItem('df_admin') === 'true';
+    let CURRENT_TAB = 'all';
+    let allPosts = [];
+    let editPostData = null;
+
+    if (!USER) {
+        const nick = prompt('👤 Ваше имя для панели:');
+        if (nick && nick.trim()) {
+            USER = nick.trim();
+            if (USER.length > 24) { alert('Слишком длинное'); }
+            localStorage.setItem('df_user', USER);
+        }
+    }
+    dfUpdateUI();
+
+    function dfUpdateUI() {
+        document.getElementById('dfUserName').textContent = USER || 'Гость';
+    }
+
+    // ===== АДМИН =====
+    document.querySelectorAll('.stats .stat').forEach(el => {
+        el.addEventListener('dblclick', dfAdminLogin);
+    });
+
+    function dfAdminLogin() {
+        const pwd = prompt('🏴‍☠️ Введите пароль админа:');
+        if (pwd === '12345') {
+            IS_ADMIN = true;
+            localStorage.setItem('df_admin', 'true');
+            alert('✅ Админ-режим включён!');
+            dfLoadAll();
+        } else if (pwd !== null) {
+            alert('❌ Неверный пароль!');
+        }
+    }
+
+    // ===== ПРОФИЛЬ =====
+    function dfOpenProfile() {
+        document.getElementById('dfProfileModal').classList.add('open');
+        document.getElementById('dfProfileNameInput').value = USER || '';
+    }
+
+    function dfCloseProfile() {
+        document.getElementById('dfProfileModal').classList.remove('open');
+    }
+
+    function dfSaveProfile() {
+        const name = document.getElementById('dfProfileNameInput').value.trim();
+        if (!name) { alert('Введите имя'); return; }
+        if (name.length > 24) { alert('Слишком длинное имя'); return; }
+        USER = name;
+        localStorage.setItem('df_user', USER);
+        dfUpdateUI();
+        dfCloseProfile();
+        dfLoadAll();
+        alert('✅ Профиль обновлён!');
+    }
+
+    // ================================================================
+    // ======  ЗАГРУЗКА ПОСТОВ ======
+    // ================================================================
+    function dfLoadAll() {
+        DB.ref('sites').once('value', snap => {
+            const sites = snap.val() || {};
+            const siteKeys = Object.keys(sites);
+            allPosts = [];
+            const siteNames = {};
+
+            document.getElementById('dfSitesCount').textContent = siteKeys.length;
+
+            siteKeys.forEach(siteId => {
+                const site = sites[siteId];
+                const posts = site.feed_posts || {};
+                siteNames[siteId] = siteId;
+
+                Object.keys(posts).forEach(postId => {
+                    const post = posts[postId];
+                    allPosts.push({
+                        id: postId,
+                        siteId: siteId,
+                        author: post.author || 'anon',
+                        text: post.text || '',
+                        time: post.time || '',
+                        timestamp: post.timestamp || Date.now(),
+                        marquee: post.marquee || '',
+                        link: post.link || '',
+                        buttons: post.buttons || [],
+                        hashtags: post.hashtags || [],
+                        img: post.img || '',
+                        edited: post.edited || false,
+                        seoDescription: post.seoDescription || ''
+                    });
+                });
+            });
+
+            allPosts.sort((a, b) => b.timestamp - a.timestamp);
+
+            document.getElementById('dfTotalPosts').textContent = allPosts.length;
+            const myPosts = allPosts.filter(p => p.author === USER);
+            document.getElementById('dfMyPosts').textContent = myPosts.length;
+
+            // Обновляем фильтр сайтов
+            const filter = document.getElementById('dfSiteFilter');
+            const currentVal = filter.value;
+            filter.innerHTML = '<option value="">Все сайты</option>';
+            const uniqueSites = [...new Set(allPosts.map(p => p.siteId))];
+            uniqueSites.forEach(site => {
+                const opt = document.createElement('option');
+                opt.value = site;
+                opt.textContent = site;
+                filter.appendChild(opt);
+            });
+            if (currentVal) filter.value = currentVal;
+
+            document.getElementById('dfSitesCountTab').textContent = uniqueSites.length;
+
+            dfRender();
+        });
+    }
+
+    // ================================================================
+    // ======  РЕНДЕР ======
+    // ================================================================
+    function dfRender() {
+        const container = document.getElementById('dfContent');
+        const search = document.getElementById('dfSearchInput').value.toLowerCase();
+        const siteFilter = document.getElementById('dfSiteFilter').value;
+
+        let posts = [...allPosts];
+
+        // Фильтр по вкладке
+        if (CURRENT_TAB === 'my') {
+            posts = posts.filter(p => p.author === USER);
+        }
+
+        // Поиск
+        if (search) {
+            posts = posts.filter(p => 
+                p.text.toLowerCase().includes(search) ||
+                p.author.toLowerCase().includes(search) ||
+                p.marquee.toLowerCase().includes(search) ||
+                (p.hashtags || []).some(t => t.toLowerCase().includes(search))
+            );
+        }
+
+        // Фильтр по сайту
+        if (siteFilter) {
+            posts = posts.filter(p => p.siteId === siteFilter);
+        }
+
+        document.getElementById('dfAllCount').textContent = allPosts.length;
+        const myPosts = allPosts.filter(p => p.author === USER);
+        document.getElementById('dfMyCount').textContent = myPosts.length;
+
+        if (posts.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📭</div>
+                    <div class="title">Нет постов</div>
+                    <div class="sub">${CURRENT_TAB === 'my' ? 'Вы ещё не создали ни одного поста' : 'Посты не найдены'}</div>
+                </div>
+            `;
+            return;
+        }
+
+        let html = `<div style="font-size:0.8rem;color:#666;margin-bottom:12px;">Найдено: ${posts.length} постов</div>`;
+
+        posts.forEach(post => {
+            const isAuthor = post.author === USER;
+            const isAdmin = IS_ADMIN;
+
+            let imgHtml = '';
+            if (post.img) {
+                imgHtml = `<img class="post-img" src="${escapeHtml(post.img)}" onclick="window.open(this.src)">`;
+            }
+
+            let frameHtml = '';
+            if (post.link) {
+                frameHtml = `<div class="post-preview"><iframe src="${escapeHtml(post.link)}" sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>`;
+            }
+
+            let buttonsHtml = '';
+            if (post.buttons && post.buttons.length > 0) {
+                buttonsHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0;">';
+                post.buttons.forEach(btn => {
+                    if (btn.url) {
+                        buttonsHtml += `<a href="${escapeHtml(btn.url)}" target="_blank" style="background:#ff8c00;border:none;border-radius:6px;padding:4px 12px;text-decoration:none;color:#0b0b0f;font-weight:700;font-size:0.7rem;">${escapeHtml(btn.label || '🔗')}</a>`;
+                    }
+                });
+                buttonsHtml += '</div>';
+            }
+
+            let hashtagsHtml = '';
+            if (post.hashtags && post.hashtags.length > 0) {
+                hashtagsHtml = post.hashtags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join(' ');
+            }
+
+            const isExpanded = post._expanded || false;
+            const textClass = isExpanded ? 'post-text expanded' : 'post-text';
+
+            html += `
+                <div class="post-card" data-post-id="${post.id}">
+                    <div class="post-header">
+                        <div>
+                            <span class="post-author">${escapeHtml(post.author)}</span>
+                            ${post.edited ? ' <span style="color:#555;font-size:0.5rem;">(ред.)</span>' : ''}
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <span class="post-site">🌐 ${escapeHtml(post.siteId)}</span>
+                            <span class="post-time">${post.time || ''}</span>
+                        </div>
+                    </div>
+                    ${post.marquee ? `<div style="background:#0f0f1a;padding:3px 0;overflow:hidden;white-space:nowrap;border-radius:4px;margin:4px 0;border:1px solid #1a1a2a;"><span style="display:inline-block;animation:scroll 10s linear infinite;color:#ff8c00;font-weight:600;font-size:0.8rem;padding-left:14px;">${escapeHtml(post.marquee)}</span></div>` : ''}
+                    <div class="${textClass}">${escapeHtml(post.text)}</div>
+                    ${imgHtml}
+                    ${buttonsHtml}
+                    ${frameHtml}
+                    ${hashtagsHtml ? `<div class="post-meta">${hashtagsHtml}</div>` : ''}
+                    ${post.seoDescription ? `<div style="font-size:0.55rem;color:#333;margin-top:4px;">🔍 SEO: ${escapeHtml(post.seoDescription)}</div>` : ''}
+                    <div class="post-actions">
+                        ${(isAdmin || isAuthor) ? `
+                            <button class="btn-edit" onclick="dfOpenEdit('${post.id}','${post.siteId}')">✏️ Ред.</button>
+                            <button class="btn-delete" onclick="dfDeletePost('${post.id}','${post.siteId}')">🗑 Удалить</button>
+                        ` : ''}
+                        <button class="btn-expand" onclick="dfToggleExpand('${post.id}')">${isExpanded ? '📄 Свернуть' : '📄 Развернуть'}</button>
+                        <button class="btn-view-site" onclick="window.open('https://${post.siteId.replace(/_/g,'.')}')">🌐 Сайт</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        // Добавляем анимацию
+        const style = document.createElement('style');
+        style.textContent = `@keyframes scroll { 0% { transform:translateX(100%); } 100% { transform:translateX(-100%); } }`;
+        document.head.appendChild(style);
+    }
+
+    // ===== ПОИСК =====
+    function dfSearch() {
+        dfRender();
+    }
+
+    // ===== ВКЛАДКИ =====
+    function dfSwitchTab(tab) {
+        CURRENT_TAB = tab;
+        document.querySelectorAll('.tabs .tab').forEach(el => {
+            el.classList.toggle('active', el.dataset.tab === tab);
+        });
+        dfRender();
+    }
+
+    // ===== РАЗВЕРНУТЬ/СВЕРНУТЬ =====
+    function dfToggleExpand(postId) {
+        const post = allPosts.find(p => p.id === postId);
+        if (post) {
+            post._expanded = !post._expanded;
+            dfRender();
+        }
+    }
+
+    // ================================================================
+    // ======  РЕДАКТИРОВАНИЕ ======
+    // ================================================================
+    function dfOpenEdit(postId, siteId) {
+        const post = allPosts.find(p => p.id === postId);
+        if (!post) return;
+
+        editPostData = { id: postId, siteId: siteId };
+
+        document.getElementById('dfEditMarquee').value = post.marquee || '';
+        document.getElementById('dfEditText').value = post.text || '';
+        document.getElementById('dfEditLink').value = post.link || '';
+        document.getElementById('dfEditHashtags').value = (post.hashtags || []).join(' ');
+
+        document.getElementById('dfEditModal').classList.add('open');
+    }
+
+    function dfCloseEdit() {
+        document.getElementById('dfEditModal').classList.remove('open');
+        editPostData = null;
+    }
+
+    function dfSaveEdit() {
+        if (!editPostData) return;
+
+        const marquee = document.getElementById('dfEditMarquee').value.trim();
+        const text = document.getElementById('dfEditText').value.trim();
+        const link = document.getElementById('dfEditLink').value.trim();
+        const hashtagsRaw = document.getElementById('dfEditHashtags').value.trim();
+        const hashtags = hashtagsRaw ? hashtagsRaw.split(/\s+/).filter(t => t.startsWith('#')) : [];
+
+        const updates = {
+            marquee: marquee || null,
+            text: text || '📝',
+            link: link || null,
+            hashtags: hashtags,
+            edited: true,
+            editedAt: Date.now()
+        };
+
+        DB.ref('sites/' + editPostData.siteId + '/feed_posts/' + editPostData.id).update(updates)
+            .then(() => {
+                dfCloseEdit();
+                alert('✅ Пост обновлён!');
+                dfLoadAll();
+            })
+            .catch(err => alert('❌ ' + err.message));
+    }
+
+    function dfDeletePostFromModal() {
+        if (!editPostData) return;
+        if (!confirm('🗑 Удалить пост навсегда?')) return;
+        dfDeletePost(editPostData.id, editPostData.siteId);
+        dfCloseEdit();
+    }
+
+    // ===== УДАЛЕНИЕ =====
+    function dfDeletePost(postId, siteId) {
+        if (!confirm('🗑 Удалить пост навсегда?')) return;
+        DB.ref('sites/' + siteId + '/feed_posts/' + postId).remove()
+            .then(() => {
+                alert('✅ Пост удалён!');
+                dfLoadAll();
+            })
+            .catch(err => alert('❌ ' + err.message));
+    }
+
+    // ================================================================
+    // ======  УТИЛИТЫ ======
+    // ================================================================
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
+    }
+
+    // ================================================================
+    // ======  ЗАПУСК ======
+    // ================================================================
+    dfLoadAll();
+
+    console.log('📰 DeepFeed Панель загружена!');
+    console.log('👤 Пользователь:', USER || 'не задан');
+    console.log('🏴‍☠️ Админ-пароль: 12345 (двойной клик на статистику)');
+    console.log('📊 Всего постов будет загружено...');
+    </script>
+</body>
+</html>
